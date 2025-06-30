@@ -54,12 +54,17 @@ interface IVeg {
 //[key:string]:any //key 是任意类型，key 的类型是字符串时，可以赋予 number,string,symbol，value 也是任意类型
 }
 
-
-//通过keyof获取key的集合，通过索引操作符获取值的集合
+//通过 keyof 获取 key 的集合，通过索引操作符获取值的集合
 interface ICar {
-  color: string;
-  size: number;
+color: string;
+size: number;
 }
 
 type key = keyof ICar; //'color' | 'size'
 type value = ICar[key]; //string | number
+
+keyof 是取 key
+typeof 是取类型
+[]是索引查询
+in 是循环
+extends 是条件
