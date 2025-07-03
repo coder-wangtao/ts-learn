@@ -1,191 +1,114 @@
-interface IPerson {
-  name: string;
-  age: string;
-}
-interface IAnimal {
-  name: string;
-  age: string;
-  address: string;
+import "reflect-metadata";
+
+function Controller(path?: string) {
+  return function (target: object) {
+    Reflect.defineMetadata("path", path, target); //给类添加一个元数据(path)
+  };
 }
 
-let person!: IPerson;
-// let animal!: IAnimal;
-// person = animal;
-
-let s1 = (a: string, b: string) => a + b;
-let s2 = (a: string) => a;
-s1 = s2;
-
-function fn(callback: (instance: Child) => Child) {
-  let child = new Child();
-  let ins = callback(child);
-  return ins;
+function methodDecorator(method: string) {
+  return function (path: string) {
+    return function (target: object, key: string, descriptor: any) {
+      Reflect.defineMetadata("method", method, descriptor.value);
+      Reflect.defineMetadata("path", path, descriptor.value);
+    };
+  };
 }
 
-class Parent {
-  house() {}
-}
-class Child extends Parent {
-  car() {}
-}
-class Grandson extends Child {
-  money() {}
-}
+const Post = methodDecorator("post");
+const Delete = methodDecorator("delete");
+const Get = methodDecorator("get");
 
-let t1: (instance: Child) => void = (instance: Parent) => ""; //函数的参数是逆变的
-let t2: (instance: Child) => Child = (instance: Child) => new Grandson(); //函数的参数是协变的
+@Controller("/article")
+class ArticleController {
+  @Post("/add")
+  addArticle() {
+    return "add article";
+  }
 
-fn((instance: Parent) => {
-  instance.house();
-  return new Child();
-});
+  @Get("/detail")
+  getDetail() {
+    return "detail";
+  }
 
-type Arg<T> = (arg: T) => void;
-type Return<T> = (arg: any) => T;
-type ArgType = Arg<Parent> extends Arg<Child> ? true : false; //逆变
-type ReturnType = Return<Grandson> extends Return<Child> ? true : false; //逆变
-export {};
-
-interface MyArray<T> {
-  concat1(...args: T[]): T[]; //不会对参数进行逆变检测
-  concat2: (...args: T[]) => void; //会对检测逆变，这种方式不推荐
+  @Delete("/remove")
+  removeArticle() {
+    return "remove detail";
+  }
 }
 
-let arr1!: MyArray<Parent>;
-let arr2!: MyArray<Child>;
-// arr1 = arr2;
+const controller = new ArticleController();
 
-// const classDecorator = <T extends new (...args: any[]) => any>(target: T) => {
-//   (target as any).type = "动物";
-//   (target as any).getType = function () {
-//     return this.type;
-//   };
-//   Object.assign(target.prototype, {
-//     eat() {},
-//     drink() {},
-//   });
+function createRoutes(instance: any) {
+  const prototype = Reflect.getPrototypeOf(instance)!;
+  const classPath = Reflect.getMetadata("path", prototype.constructor);
+  debugger;
+  let keys = Reflect.ownKeys(prototype).filter(
+    (item) => item !== "constructor"
+  );
+  let routes: any[] = [];
+  keys.forEach((key) => {
+    let prototypeFn = (prototype as any)[key];
+    const method = Reflect.getMetadata("method", prototypeFn);
+    const path = Reflect.getMetadata("path", prototypeFn);
+    routes.push({
+      method: method,
+      path: classPath + path,
+      handler: prototypeFn,
+    });
+  });
+  return routes;
+}
+const routes = createRoutes(controller);
+console.log(routes);
+
+//模版字符串也是具备分发能力
+type Direction = "top" | "bottom" | "right" | "left";
+type AllMargin = `margin-${Direction}`; //"margin-top" | "margin-bottom" | "margin-right" | "margin-left"
+
+//将对象的属性进行重命名操作{name,age,address} => {r_name,r_age,r_address}
+// type Person = {
+//   name: string;
+//   age: number;
+//   address: string;
 // };
 
-// @classDecorator
-// class Animal {}
-// console.log(typeof Animal); //function
-// console.log((Animal as any).getType());
-// const animal = new Animal();
-// console.log(animal);
-
-// function OverrideAnimal(target: any) {
-//   return class extends target {
-//     eat() {
-//       super.eat();
-//       console.log("new eat");
-//     }
-//   };
+type ReType<T> = {
+  [K in keyof T as `r_${K & string}`]: T[K];
+};
+type x = ReType<Person>;
+// {
+//     r_name: string;
+//     r_age: string;
+//     r_address: string;
 // }
 
-function Enum(isEnum: boolean): MethodDecorator {
-  return function (target, property, descriptor) {
-    //descriptor.enumerable 是否可枚举
-    //descriptor.writable 是否可被重写
-    //descriptor.configurable 是否可被删除
-    //descriptor.value 当前值
-    descriptor.enumerable = isEnum;
-    let original = descriptor.value as any;
-    descriptor.value = function () {
-      console.log("prev eat");
-      return original(...arguments);
-    } as any;
-  };
-}
+type Person = {
+  name: string;
+  age: number;
+  address: string;
+};
 
-// class Animal {
+let person: Person = {
+  name: "jw",
+  age: 30,
+  address: "北京",
+};
+type WithGetter<T> = {
+  [K in keyof T as `get${Capitalize<K & string>}`]?: () => T[K];
+};
 
-//   @Enum(true)
-//   eat() {
-//     console.log("animal original");
-//   }
-// }
-
-// function ToUpper(isUpper: boolean): PropertyDecorator {
-//   return function (target, property, descriptor) {
-//     //descriptor.enumerable 是否可枚举
-//     //descriptor.writable 是否可被重写
-//     //descriptor.configurable 是否可被删除
-//     //descriptor.value 当前值
-//     descriptor.enumerable = isEnum;
-//     let original = descriptor.value as any;
-//     descriptor.value = function () {
-//       console.log("prev eat");
-//       return original(...arguments);
-//     } as any;
-//   };
-// }
-
-// class Animal {
-//   @ToUpper(true)
-//   public name: string = "animal";
-// }
-// const animal = new Animal();
-// animal.eat();
-
-function MyPropertyDecorator(target: any, propertyKey: string | symbol) {
-  console.log(
-    `${target.toString()} Property ${String(propertyKey)} is being decorated!`
-  );
-}
-
-class MyClass {
-  @MyPropertyDecorator
-  myProperty: string;
-
-  constructor(myProperty: string) {
-    this.myProperty = myProperty;
-  }
-}
-
-function ToUpper(isUpper: boolean): PropertyDecorator {
-  return function (target, property) {
-    //descriptor.enumerable 是否可枚举
-    //descriptor.writable 是否可被重写
-    //descriptor.configurable 是否可被删除
-    //descriptor.value 当前值
-    let val = "";
-    Object.defineProperty(target, property, {
-      enumerable: true,
-      get() {
-        return val.toUpperCase();
-      },
-      set(newValue) {
-        val = newValue;
-      },
-    });
-  };
-}
-function valToUpper(target: any, property: any, descriptor: any) {
-  let originalSet = descriptor.set;
-  let originalGet = descriptor.get;
-  descriptor.set = function (newValue: string) {
-    return originalSet.call(this, newValue.toUpperCase());
-  };
-  descriptor.get = function () {
-    return originalGet.call(this) + "123";
-  };
-}
-
-class Animal {
-  private _val!: string;
-  @valToUpper
-  get val() {
-    return this._val;
-  }
-  set val(newValue: string) {
-    this._val = newValue;
-  }
-}
-const animal = new Animal();
-animal.val = "abc";
-console.log(animal.val);
-
-// class Animal {
-//   @ToUpper(true)
-//   public name: string = "animal";
-// }
+type Compute<T> = { [K in keyof T]: T[K] };
+type WithGetterType = Compute<WithGetter<Person>>;
+let personGetter: WithGetterType = {
+  getName() {
+    return person.name;
+  },
+  getAge() {
+    return person.age;
+  },
+  getAddress() {
+    return person.address;
+  },
+};
+export {};
