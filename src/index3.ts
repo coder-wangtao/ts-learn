@@ -1,7 +1,5 @@
 import "reflect-metadata";
 
-
-
 @Reflect.metadata("Class", "Animal metadata")
 class Animal {
   @Reflect.metadata("Class Property", "type metadata")
