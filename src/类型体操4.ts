@@ -1,11 +1,11 @@
 type A = {
   name: string;
   address: number;
+  male: boolean;
 };
 
 type B = {
   name: string;
-  male: boolean;
   address: number;
 };
 

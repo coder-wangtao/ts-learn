@@ -21,4 +21,24 @@ let man: manType = {
   funny: "222",
 };
 
+// interface r1 {
+//   fortune: never;
+//   funny: never;
+//   foreign: string;
+// }
+
+// interface r2 {
+//   fortune: never;
+//   funny: string;
+//   foreign: never;
+// }
+
+// interface r3 {
+//   fortune: string;
+//   funny: never;
+//   foreign: never;
+// }
+
+type res = (r1 | r2) & {};
+
 export {};
