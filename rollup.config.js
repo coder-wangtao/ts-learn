@@ -1,8 +1,10 @@
 import ts from "rollup-plugin-typescript2";
 import serve from "rollup-plugin-serve";
-import { nodeResolve } from "@rollup/plugin-node-resolve";
+import resolveBrowser, { nodeResolve } from "@rollup/plugin-node-resolve";
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
+import commonjs from "@rollup/plugin-commonjs";
+
 //nodejs在esm模式下获取当前文件路径
 //‌在ES模块（ESM）中获取当前文件的绝对路径可以通过import.meta.url和fileURLToPath函数实现。
 const __filename = fileURLToPath(import.meta.url); //当前文件的绝对路径
@@ -19,9 +21,12 @@ export default {
     sourcemap: true,
   },
   plugins: [
+    resolveBrowser({ browser: true, preferBuiltins: false }),
+    commonjs({ transformMixedEsModules: true }),
     nodeResolve({
       extensions: [".js", ".ts"],
     }),
+
     ts({
       tsconfig: resolve(__dirname, "tsconfig.json"),
     }),

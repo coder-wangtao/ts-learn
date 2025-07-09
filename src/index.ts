@@ -1,4 +1,8 @@
-import axios, { AxiosRequestConfig, AxiosResponse } from "./axios";
+import axios, {
+  AxiosRequestConfig,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from "./axios";
 
 const baseURL = "http://localhost:8080";
 
@@ -9,15 +13,28 @@ interface Person {
 
 let person: Person = { name: "jw", age: 30 };
 
+// let requestConfig: AxiosRequestConfig = {
+//   url: baseURL + "/vpp/captcha",
+//   method: "get",
+//   params: person,
+// };
+
 let requestConfig: AxiosRequestConfig = {
-  url: baseURL + "/get",
-  method: "get",
-  params: person,
+  url: baseURL + "/vpp/captcha",
+  method: "post",
+  data: person,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  // timeout: 1000,
 };
 
+// axios.inter;
+
+debugger;
 axios<Person>(requestConfig)
   .then((response: AxiosResponse<Person>) => {
-    console.log(response.data.age);
+    console.log(response.data);
   })
   .catch((error: any) => {
     console.log("error" + error);
