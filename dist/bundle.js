@@ -3054,13 +3054,14 @@
 	var parseHeadersExports = requireParseHeaders();
 	var parseHeader = /*@__PURE__*/getDefaultExportFromCjs(parseHeadersExports);
 
+	//这个地方是功能，同时可以当类型来使用
 	class AxiosInterceptorManager {
 	    constructor() {
 	        this.interceptors = [];
 	    }
-	    use(OnFufilled, onRejected) {
+	    use(onFulfilled, onRejected) {
 	        this.interceptors.push({
-	            OnFufilled,
+	            onFulfilled,
 	            onRejected,
 	        });
 	        return this.interceptors.length - 1;
@@ -3080,7 +3081,19 @@
 	        };
 	    }
 	    request(config) {
-	        return this.dispatchRequest(config);
+	        const chain = [{ onFulfilled: this.dispatchRequest }];
+	        this.interceptors.request.interceptors.forEach((interceptor) => {
+	            interceptor && chain.unshift(interceptor);
+	        });
+	        this.interceptors.response.interceptors.forEach((interceptor) => {
+	            interceptor && chain.push(interceptor);
+	        });
+	        let promise = Promise.resolve(config);
+	        while (chain.length) {
+	            const { onFulfilled, onRejected } = chain.shift();
+	            promise = promise.then(onFulfilled, onRejected);
+	        }
+	        return promise;
 	    }
 	    dispatchRequest(config) {
 	        return new Promise((resolve, reject) => {
@@ -3101,11 +3114,12 @@
 	            request.responseType = "json";
 	            request.onreadystatechange = () => {
 	                //请求发送成功了，status = 0表示请求未发送，请求（网络）异常
-	                if (request.readyState === 4 && request.status !== 0) {
+	                if ((request.readyState === 4 || request.readyState === 2) &&
+	                    request.status !== 0) {
 	                    //请求成功
 	                    if (request.status >= 200 && request.status < 300) {
 	                        let response = {
-	                            data: request.response || request.responseText,
+	                            data: request.response || { name: "wt", age: 20 },
 	                            status: request.status,
 	                            statusText: request.statusText,
 	                            headers: parseHeader(request.getAllResponseHeaders()),
@@ -3133,6 +3147,13 @@
 	            request.onerror = function () {
 	                reject("net::ERR_INTERNET_DISCONNECTED");
 	            };
+	            if (config.cancelToken) {
+	                config.cancelToken.then((message) => {
+	                    request.abort();
+	                    reject(message);
+	                });
+	                return;
+	            }
 	            request.send(requestBody); //发送请求
 	        });
 	    }
@@ -3142,6 +3163,27 @@
 	//2 根据状态码来决定失败
 	//3 超时处理
 
+	class Cancel {
+	    constructor(message) {
+	        this.message = message;
+	    }
+	}
+	function isCancel(message) {
+	    return message instanceof Cancel;
+	}
+	class CancelTokenStatic {
+	    source() {
+	        return {
+	            token: new Promise((resolve, reject) => {
+	                this.resolve = resolve;
+	            }),
+	            cancel: (message) => {
+	                this.resolve(new Cancel(message));
+	            },
+	        };
+	    }
+	}
+
 	function createInstance() {
 	    const context = new Axios();
 	    let instance = Axios.prototype.request.bind(context);
@@ -3149,8 +3191,12 @@
 	    return instance;
 	}
 	const axios = createInstance();
+	axios.CancelToken = new CancelTokenStatic();
+	axios.isCancel = isCancel;
 
 	const baseURL = "http://localhost:8080";
+	const CancelToken = axios.CancelToken;
+	const source = CancelToken.source();
 	let person = { name: "jw", age: 30 };
 	// let requestConfig: AxiosRequestConfig = {
 	//   url: baseURL + "/vpp/captcha",
@@ -3158,23 +3204,70 @@
 	//   params: person,
 	// };
 	let requestConfig = {
-	    url: baseURL + "/vpp/captcha",
-	    method: "post",
-	    data: person,
+	    url: baseURL + "/get",
+	    method: "get",
+	    params: person,
 	    headers: {
-	        "Content-Type": "application/json",
+	    // "Content-Type": "application/json",
 	    },
+	    cancelToken: source.token,
 	    // timeout: 1000,
 	};
 	// axios.inter;
-	debugger;
+	//请求拦截器是倒序走的
+	let r1 = axios.interceptors.request.use((config) => {
+	    config.headers.name += "a";
+	    return config;
+	}, (err) => {
+	    console.log(err);
+	});
+	axios.interceptors.request.use((config) => {
+	    config.headers.name += "b";
+	    return config;
+	}, (err) => {
+	    console.log(err);
+	});
+	axios.interceptors.request.use((config) => {
+	    config.headers.name += "c";
+	    return config;
+	}, (err) => {
+	    console.log(err);
+	});
+	axios.interceptors.request.eject(r1); //删除r1
+	//响应拦截器是正序走
+	// axios.interceptors.response.use(
+	//   (response) => {
+	//     response.data.name += "a";
+	//     return response;
+	//   },
+	//   () => {}
+	// );
+	// let r2 = axios.interceptors.response.use(
+	//   (response) => {
+	//     response.data.name += "b";
+	//     return response;
+	//   },
+	//   () => {}
+	// );
+	// axios.interceptors.response.use(
+	//   (response) => {
+	//     response.data.name += "c";
+	//     return response;
+	//   },
+	//   () => {}
+	// );
+	// axios.interceptors.response.eject(r2);
 	axios(requestConfig)
 	    .then((response) => {
 	    console.log(response.data);
 	})
 	    .catch((error) => {
+	    if (axios.isCancel(error)) {
+	        return console.log("是取消的错误", error);
+	    }
 	    console.log("error" + error);
 	});
+	source.cancel("我不想请求了");
 
 })();
 //# sourceMappingURL=bundle.js.map

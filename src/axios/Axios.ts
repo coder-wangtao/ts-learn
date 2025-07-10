@@ -5,7 +5,9 @@ import {
 } from "./types";
 import qs from "qs";
 import parseHeader from "parse-headers";
-import AxiosInterceptorManager from "./AxiosInterceptorManager";
+import AxiosInterceptorManager, {
+  Interceptor,
+} from "./AxiosInterceptorManager";
 
 class Axios {
   public interceptors = {
@@ -14,7 +16,31 @@ class Axios {
   };
 
   request<T>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-    return this.dispatchRequest(config);
+    const chain: (
+      | Interceptor<InternalAxiosRequestConfig>
+      | Interceptor<AxiosResponse<AxiosResponse>>
+    )[] = [{ onFulfilled: this.dispatchRequest }];
+
+    this.interceptors.request.interceptors.forEach((interceptor) => {
+      interceptor && chain.unshift(interceptor);
+    });
+
+    this.interceptors.response.interceptors.forEach((interceptor) => {
+      interceptor && chain.push(interceptor);
+    });
+
+    let promise: Promise<
+      InternalAxiosRequestConfig | AxiosResponse | AxiosRequestConfig
+    > = Promise.resolve(config);
+
+    while (chain.length) {
+      const { onFulfilled, onRejected } = chain.shift()!;
+      promise = promise.then(
+        onFulfilled as (v: AxiosRequestConfig | AxiosResponse) => any,
+        onRejected
+      );
+    }
+    return promise as Promise<AxiosResponse<T>>;
   }
 
   dispatchRequest<T>(config: AxiosRequestConfig): Promise<AxiosResponse<T>> {
@@ -39,11 +65,14 @@ class Axios {
       request.responseType = "json";
       request.onreadystatechange = () => {
         //请求发送成功了，status = 0表示请求未发送，请求（网络）异常
-        if (request.readyState === 4 && request.status !== 0) {
+        if (
+          (request.readyState === 4 || request.readyState === 2) &&
+          request.status !== 0
+        ) {
           //请求成功
           if (request.status >= 200 && request.status < 300) {
             let response: AxiosResponse<T> = {
-              data: request.response || request.responseText,
+              data: request.response || { name: "wt", age: 20 },
               status: request.status,
               statusText: request.statusText,
               headers: parseHeader(request.getAllResponseHeaders()),
@@ -74,6 +103,14 @@ class Axios {
       request.onerror = function () {
         reject("net::ERR_INTERNET_DISCONNECTED");
       };
+      if (config.cancelToken) {
+        config.cancelToken.then((message) => {
+          request.abort();
+          reject(message);
+        });
+        return;
+      }
+
       request.send(requestBody); //发送请求
     });
   }

@@ -1,16 +1,19 @@
-type OnFulfilled<V> = (value: V) => V | Promise<V>;
+import { AxiosResponse } from "./types";
+
+type OnFulfilled<V> = (value: V) => V | Promise<V> | Promise<AxiosResponse<V>>;
 type OnRejected = (error: any) => any;
 
-interface Interceptor<V> {
-  OnFufilled?: OnFulfilled<V>;
+export interface Interceptor<V> {
+  onFulfilled?: OnFulfilled<V>;
   onRejected?: OnRejected;
 }
 
+//这个地方是功能，同时可以当类型来使用
 class AxiosInterceptorManager<V> {
   public interceptors: Array<Interceptor<V> | null> = [];
-  use(OnFufilled: OnFulfilled<V>, onRejected?: OnRejected): number {
+  use(onFulfilled?: OnFulfilled<V>, onRejected?: OnRejected): number {
     this.interceptors.push({
-      OnFufilled,
+      onFulfilled,
       onRejected,
     });
     return this.interceptors.length - 1;

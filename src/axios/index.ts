@@ -1,4 +1,5 @@
 import Axios from "./Axios";
+import { CancelTokenStatic, isCancel } from "./CancelToken";
 import { AxiosInstance } from "./types";
 function createInstance() {
   const context = new Axios();
@@ -8,6 +9,7 @@ function createInstance() {
 }
 
 const axios = createInstance();
-
+axios.CancelToken = new CancelTokenStatic();
+axios.isCancel = isCancel;
 export default axios;
 export * from "./types";
