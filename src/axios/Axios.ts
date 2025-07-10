@@ -103,6 +103,7 @@ class Axios {
       request.onerror = function () {
         reject("net::ERR_INTERNET_DISCONNECTED");
       };
+
       if (config.cancelToken) {
         config.cancelToken.then((message) => {
           request.abort();
