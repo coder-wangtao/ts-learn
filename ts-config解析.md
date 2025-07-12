@@ -63,3 +63,38 @@ declarationDir：指定生成的声明文件的输出目录。
 isolatedModules：严格模块导出，导入类型需要增加 type 标识
 verbatimModuleSyntax：不要转换或删除任何未仅标记为类型的导入或导出，确保它们以基于“模块”设置的输出文件格式写入。
 isolatedDeclarations:需要对导出进行足够的注释，以便其他工具可以轻松生成声明文件
+
+6.Type Checking(类型校验)
+noImplicitAny：为具有隐含“any”类型的表达式和声明启用错误报告。
+strictNullChecks：是否进行严格的 null 检测，null 不能赋值给 undefined。
+strictFunctionTypes:在分配函数时，请检查以确保参数和返回值与子类型兼容。此参数支持双向协变（让参数可以进行协变操作）
+strictBindCallApply：保证用 apply 调用和自己调用时参数是一致的。
+strictPropertyInitialization：类中的属性进行属性初始化才能使用
+noImplicitThis：当“this”的类型为“any”时，启用错误报告。
+strictBuiltinIteratorReturn:内置迭代器被实例化为'TReturn'类型的'undefined'而不是'any'。
+useUnknownInCatchVariables:catch 中的 error 类型是 unknown 不再是 any
+alwaysStrict:在打包结果上增加严格模式(use strict)
+noUnusedLocals:如果变量未被使用会发生警告
+noUnusedParameters：如果函数参数未被使用会发生警告
+exactOptionalPropertyTypes：类型中属性是可选的，如果要传递 undefined,需要自己添加 undefined 类型
+noImplicitReturns：返回值是否保证每条路径都有
+noFallthroughCasesInSwitch：防止 switch case 缺少 break 语句
+noUncheckedIndexedAccess：使用索引访问时向类型添加“undefined”
+noImplicitOverride:重写类中方法前加 override
+noPropertyAccessFromIndexSignature:只能通过[]来访问属性，不能使用.访问属性
+allowUnusedLabels：循环的 label 未使用时报警告
+allowUnreachableCode：代码未触达，会报警告
+
+7.Completeness(完整性)
+skipDefaultLibCheck:是否跳过ts中的内置类型检测
+skipLibCheck：跳过检测第三方的类型
+
+8.Projects(项目相关)
+incremental：打包增量编译
+tsBuildInfoFile：打包增量编译的文件名字
+composite：启用允许TypeScript项目与项目引用一起使用的约束。
+disableSourceOfProjectReferenceRedirect：在引用复合项目时，禁用优先选择源文件而非声明文件的功能。
+disableSolutionSearching：引用其他项目时是否检测引用的项目
+disableReferencedProjectLoad：禁用引用项目的加载
+
+
